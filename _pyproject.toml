@@ -1,0 +1,26 @@
+# 由于该工程实际部署时，并不刚需numpy torch作为依赖
+# 实际部署时使用_pyproject.toml作为工程的配置文件
+[project]
+name = "sympydantic"
+version = "0.1.0"
+description = "A Python library combining SymPy, Pydantic for type-safe numerical computing and model validation with optional NumPy and PyTorch support"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.12.4",
+    "sympy>=1.14.0",
+]
+
+[project.optional-dependencies]
+numpy = ["numpy>=2.3.5"]
+torch = ["torch>=2.9.1"]
+dev = [
+    "mypy>=1.18.2",
+    "pytest>=9.0.1",
+    "numpy>=2.3.5",
+    "torch>=2.9.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,0 +1,82 @@
+from __future__ import annotations
+
+from typing import override, cast, Any, TypeVar
+
+from pydantic_core import core_schema
+import sympy as sp  # type: ignore[import-untyped]
+from sympy import Expr  # type: ignore[import-untyped]
+
+from .basemetadata import SubscriptableMetadata, _SupportsGetitem
+from .protocols import _SupportsCompareNumber, _SupportsCompare
+
+
+# 平泽原你看你代码写得像坨粑粑……  --平泽原
+
+
+class _NRange(SubscriptableMetadata):
+    def __init__(self, range_: slice):
+        type RangeType = int | Expr | None
+        self._start = cast(RangeType, range_.start)
+        self._stop = cast(RangeType, range_.stop)
+        self._step = cast(RangeType, range_.step)
+    
+    @override
+    def _validate(
+        self,
+        value: _SupportsCompareNumber | Any,
+        info: core_schema.ValidationInfo,
+    ) -> _SupportsCompareNumber:
+        # isinstance() argument 2 cannot be a parameterized generic
+        # so I can't use isinstance(value, _SupportsCompareNumber.__value__)
+        # because `type _SupportsCompareNumber = _SupportsCompare[float] | _SupportsCompare[int]`
+        # If you define a class that only support compare to str.
+        # mypy will raise an error.
+        # but the under if-branch will not.
+        if not isinstance(value, _SupportsCompare):
+            raise TypeError(f'value must be a number, not {type(value).__name__}')
+        value = cast(_SupportsCompareNumber, value)
+        config = {} if info.config is None else info.config
+        strict = config.get('strict', False)
+        context = info.context
+        if context is None:
+            return value
+        if not 'sympy_namespace' in context:
+            context['sympy_namespace'] = {}
+        sympy_namespace = context['sympy_namespace']
+        start: None | float
+        stop: None | float
+        if isinstance(self._start, Expr):
+            free_symbols = {symbol.name for symbol in self._start.free_symbols}
+            diff_symbols = free_symbols - sympy_namespace.keys()
+            if len(diff_symbols):
+                raise ValueError(f'undefined symbols: {diff_symbols}')
+            start_expr = self._start.subs(sympy_namespace)
+            if not start_expr.is_number:
+                raise ValueError(f'start must be a number, not {start_expr}')
+            start = float(start_expr)
+        else:
+            start = None if self._start is None else float(self._start)
+        if isinstance(self._stop, Expr):
+            free_symbols = {symbol.name for symbol in self._stop.free_symbols}
+            diff_symbols = free_symbols - sympy_namespace.keys()
+            if len(diff_symbols):
+                raise ValueError(f'undefined symbols: {diff_symbols}')
+            stop_expr = self._stop.subs(sympy_namespace)
+            if not stop_expr.is_number:
+                raise ValueError(f'stop must be a number, not {stop_expr}')
+            stop = float(stop_expr)
+        else:
+            stop = None if self._stop is None else float(self._stop)
+        # TODO: support step
+        
+        if start is not None and value < start:  # type: ignore[operator]
+            raise ValueError(f'value must be greater than {start}')
+        if stop is not None and value >= stop:  # type: ignore[operator]
+            raise ValueError(f'value must be less than or equal to {stop}')
+        return value
+
+
+nrange = cast(
+    _SupportsGetitem[slice, _NRange],
+    _NRange.subscriptable()
+)
