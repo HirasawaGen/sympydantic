@@ -7,7 +7,7 @@ try:
 except ImportError:
     pytest.skip("Numpy is not installed, This file was skipped.", allow_module_level=True)
 
-from dataschemas.numpy import NDArray
+from sympydantic.dataschemas.numpy import NDArray
 
 # dataschemas.numpy.NDArray can cast input to numpy.ndarray
 # you can also type hint the dtype you want

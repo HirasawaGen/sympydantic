@@ -35,7 +35,7 @@ class SubscriptableMetadata(MyBaseMetadata):
     def subscriptable(cls) -> _SupportsGetitem[Any, Self]:
         class Subscriptable:
             def __getitem__(self, *keys: Any):
-                return cls(*keys)
+                return cls(*keys)  
         Subscriptable.__name__ = f'{cls.__name__}Subscriptable'
         Subscriptable.__qualname__ = f'{cls.__qualname__}Subscriptable'
         Subscriptable.__module__ = cls.__module__

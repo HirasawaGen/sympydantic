@@ -5,15 +5,10 @@ from functools import wraps
 
 from pydantic import ValidationError
 
-# This is a monkey patch
-import _patch # noqa: F401
-from metadatas.protocols import TensorLike
-
-
-sys.path.append(str(Path(__file__).parent.parent.absolute()))
-DEFAULT_TENSOR = 'numpy'
+from sympydantic import TensorLike
 
 __all__ = ['should_raise','invalid_call', 'create_tensor', 'DEFAULT_TENSOR']
+DEFAULT_TENSOR = 'numpy'
 
 
 def should_raise(*exception_types: type[Exception]):

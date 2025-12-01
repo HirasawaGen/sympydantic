@@ -1,5 +1,5 @@
 from . import create_tensor
-from metadatas.protocols import TensorLike
+from sympydantic import TensorLike
 
 
 def test_tensorlike_protocol() -> None:

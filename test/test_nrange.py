@@ -4,8 +4,8 @@ from pytest import mark
 from pydantic import validate_call
 from sympy.abc import X, Y, Z  # type: ignore[import-untyped]
 
-from metadatas import nrange, tensorshape
-from metadatas.protocols import TensorLike
+from sympydantic import nrange, tensorshape
+from sympydantic import TensorLike
 from . import invalid_call, create_tensor
 
 

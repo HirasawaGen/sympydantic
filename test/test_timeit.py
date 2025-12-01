@@ -6,10 +6,10 @@ import numpy as np
 from annotated_types import Annotated
 from sympy.abc import X, Y, Z  # type: ignore[import-untyped]
 
-from metadatas import tensorshape
-from metadatas.device import CUDA
-from dataschemas.numpy import NDArray
-from dataschemas.torch import Tensor
+from sympydantic import tensorshape
+from sympydantic.metadatas.device import CUDA
+from sympydantic.dataschemas.numpy import NDArray
+from sympydantic.dataschemas.torch import Tensor
 
 
 number = 10_0000
