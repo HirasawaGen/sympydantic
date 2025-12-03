@@ -13,7 +13,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: astral/uv:python3.12-boolworm-slim
+    container: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
     steps:
       - 
         name: Checkout
@@ -23,19 +23,30 @@ jobs:
         run: uv build
       -
         name: mkdir
-        run: cd .. && mkdir test-sympydantic && cd test-sympydantic
+        run: mkdir ../test-sympydantic
+      - 
+        name: init project
+        run: uv init
+        working-directory: ../test-sympydantic
       -
         name: install sympydantic
         run:  uv add ../sympydantic/
+        working-directory: ../test-sympydantic
       -
         name: check install
         run: uv run python -m sympydantic
+        working-directory: ../test-sympydantic
       -
         name: install other packages
         run: uv add numpy pytest
+        working-directory: ../test-sympydantic
+      -
+        name: cp test file
+        run: cp -r ./test ../test-sympydantic
       -
         name: run tests
         run: uv run pytest
+        working-directory: ../test-sympydantic
       
 
 
