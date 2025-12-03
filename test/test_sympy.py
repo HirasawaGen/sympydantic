@@ -27,8 +27,10 @@ def test_symbol_right(
     assert 2*a == c
     
 @mark.parametrize('a,b,c', [
-    (2, 2, 5),
-    (5, 6, 10)
+    (2, 2, 5),  # value_conflict
+    # The expression '2*x' is solved as 4.0, which is conflict with the provided value 5.
+    (5, 6, 10)  # symbol_redefine
+    # The symbol 'x' is already set to 5. you provide a conflict value 6.
 ])
 @invalid_call
 @validate_call
@@ -37,4 +39,27 @@ def test_symbol_wrong(
     b: Annotated[int, x],
     c: Annotated[int, x * 2],
 ) -> NoReturn:
+    raise AssertionError('This scope should not be reached')
+
+@mark.parametrize('a', [
+    5
+])
+@invalid_call
+@validate_call
+def test_symbol_symbol_undefined(
+    a: Annotated[int, x+y],
+) -> NoReturn:
+    # The symbols {x, y} in 'x + y' are not appeared in the above validations.
+    raise AssertionError('This scope should not be reached')
+
+
+@mark.parametrize('a', [
+    5
+])
+@invalid_call
+@validate_call
+def test_symbol_undefined_single(
+    a: Annotated[int, x+1],
+) -> NoReturn:
+    # The symbol 'x' in 'x + 1' is not appeared in the above validations. When a symbol first appeared, They should be a single symbol format, like 'x'. But 'x + 1' you provide is a complex expression.
     raise AssertionError('This scope should not be reached')

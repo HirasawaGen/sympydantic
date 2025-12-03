@@ -92,6 +92,65 @@ def test_typevar_wrong[_X](
 
 
 
+@mark.parametrize("arr1, arr2, arr3", [
+    [
+        create_tensor((8, 8)), 
+        create_tensor((1, 3, 8, 8, 6)),
+        create_tensor((6, 8, 8))
+    ]
+])
+# validate_call 是pydantic提供的装饰器，用于参数验证
+@validate_call
+def test_multiple_shape_right(
+    # Annotated是python标准库typing模块中的特殊类型标注
+    # TensorLike 是自定义协议，torch.tensor和numpy.ndarray都满足这个协议
+    # tensorshape是自定义元数据，用于标注满足TensorLike协议的对象的shape字段
+    # ----------------------------------------------------- #
+    # ... 表示任意尺寸
+    arr1: Annotated[TensorLike, tensorshape[...]],
+    # X为sympy.Symbol对象，首次出现时为任意int型
+    # '*arr1' 表示arr1的shape
+    # 即 arr2.shape[2:-1] == arr1.shape
+    # `3:` 表示最后一个维度要大于等于3
+    arr2: Annotated[TensorLike, tensorshape[1, X, '*arr1', 3:]],
+    # X 在arr2的标注中出现过了，所以arr3.shape必须是X+3
+    # 即 arr3.shape[0] == arr2.shape[1] + 3
+    arr3: Annotated[TensorLike, tensorshape[X + 3, '*arr1']],
+) -> None:
+    shape1 = arr1.shape
+    shape2 = arr2.shape
+    shape3 = arr3.shape
+    # 若三个参数不满足以下assert
+    # @validate_call会抛出pydantic.ValidationError
+    # test_multiple_shape_right函数体不会执行
+    assert len(shape1) + 3 == len(shape2)
+    assert len(shape1) + 1 == len(shape3)
+    assert shape2[2: -1] == shape1
+    assert shape2[0] == 1
+    assert shape2[-1] >= 3
+    assert shape3[1:] == shape1
+    symbol_X = shape2[1]
+    assert shape3[0] == symbol_X + 3
+'''
+正例：
+    arr1=np.ndarray((2, 3))
+    arr2=np.ndarray((1, 3, 2, 3, 7))
+    arr3=np.ndarray((6, 2, 3))
+反例：
+    arr1=np.ndarray((2, 3))
+    arr2=np.ndarray((2, 3, 2, 3, 7))  # <--- 维度不匹配 标注第一维为1，实际为2
+    arr3=np.ndarray((6, 2, 3))
+    
+    arr1=np.ndarray((2, 3))
+    arr2=np.ndarray((1, 3, 2, 3, 7))
+    arr3=np.ndarray((6, 3, 3))  # <--- 维度不匹配 标注最后几维要与arr1一致，实际并不一致
+    
+    arr1=np.ndarray((2, 3))
+    arr2=np.ndarray((1, 3, 2, 3, 2))  # <--- 维度不匹配 标注最后一维要大于等于3，实际为2
+    arr3=np.ndarray((6, 2, 3))
+'''
+
+
 
     
 

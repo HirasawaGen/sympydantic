@@ -2,7 +2,15 @@ from typing import NoReturn, Any
 
 from sympy import Expr, Symbol  # type: ignore[import-untyped]
 from pydantic import GetCoreSchemaHandler
+from pydantic_core import PydanticCustomError
 from pydantic_core import core_schema
+
+from ..errors.sympy import (
+    SymbolRedefinedError,
+    SymbolUndefinedError,
+    SymbolSolveError,
+    ValueConflictError,
+)
 
 
 class _Expr(Expr):
@@ -31,7 +39,8 @@ class _Expr(Expr):
         This method is patched.
         '''
         if not isinstance(value, (int, float)):
-            raise ValueError(f"Value {value} is not a number.")
+            # NOTE: `TypeError` or `PydanticCustomError`? I'm not sure.
+            raise TypeError(f"Value {value} is not a number.")
         context = info.context
         if context is None:
             return value
@@ -45,19 +54,33 @@ class _Expr(Expr):
                 return value
             # already in sympy_namespace
             if abs(sympy_namespace[self.name] - value) > self._THRESHOLD:
-                raise ValueError(f"Symbol {self.name} already exists in sympy_namespace with different value.")
+                raise SymbolRedefinedError(
+                    self.name,
+                    sympy_namespace[self.name],
+                    value
+                )
             return value
         # self is a Expr obj, but not a Symbol
         free_symbols = {symbol.name for symbol in self.free_symbols}
         diff_symbols = free_symbols - sympy_namespace.keys()
         if len(diff_symbols):
-            raise ValueError(f"Symbols {diff_symbols} are not in sympy_namespace.")
+            raise SymbolUndefinedError(
+                diff_symbols,
+                self
+            )
         solved = self.subs(sympy_namespace)
         if not solved.is_number:
-            raise ValueError(f"Cannot solve {self} with sympy_namespace {sympy_namespace}.")
+            raise SymbolSolveError(
+                self,
+                solved
+            )
         solved = float(solved)
         if abs(solved - value) > self._THRESHOLD:
-            raise ValueError(f"Expression {self} not equal to {value}.")
+            raise ValueConflictError(
+                self,
+                solved,
+                value
+            )
         return value
         
     def __index__(self) -> NoReturn:

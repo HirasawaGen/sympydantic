@@ -1,0 +1,44 @@
+name: Test_workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: astral/uv:python3.12-boolworm-slim
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@v6
+      -
+        name: build
+        run: uv build
+      -
+        name: mkdir
+        run: cd .. && mkdir test-sympydantic && cd test-sympydantic
+      -
+        name: install sympydantic
+        run:  uv add ../sympydantic/
+      -
+        name: check install
+        run: uv run python -m sympydantic
+      -
+        name: install other packages
+        run: uv add numpy pytest
+      -
+        name: run tests
+        run: uv run pytest
+      
+
+
+    
+
+

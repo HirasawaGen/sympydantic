@@ -1,9 +1,15 @@
 import timeit
 
-import torch
-from pydantic import validate_call
-import numpy as np
+import pytest
+
+try:
+    import torch
+    import numpy as np
+except ImportError:
+    pytest.skip("Numpy is not installed, This file was skipped.", allow_module_level=True)
+    
 from annotated_types import Annotated
+from pydantic import validate_call
 from sympy.abc import X, Y, Z  # type: ignore[import-untyped]
 
 from sympydantic import tensorshape

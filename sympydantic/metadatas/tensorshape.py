@@ -10,6 +10,7 @@ import sympy as sp
 
 from .basemetadata import SubscriptableMetadata, _SupportsGetitem
 from .protocols import TensorLike
+from ..errors.compare import DimensionGeError, DimensionLtError
 
 
 type SingleTypes = int | str | TypeVar | Expr | EllipsisType
@@ -23,9 +24,11 @@ class _Tensorshape(SubscriptableMetadata):
     # strict=True: not allow all, and not all list cast to tensorlike.
     # strict=None: allow unsqueeze and squeeze, broadcast
     # strict=False: allow reshape
-    # TODO: change all the ErrorType to PydanticUserError
-    def __init__(self, shape: tuple[SingleTypes | slice, ...]):
-        self._shape = shape
+    # TODO: change all the ErrorType to PydanticUserError & TypeError
+    def __init__(self, shape: tuple[SingleTypes | slice, ...] | SingleTypes | slice):
+        if not isinstance(shape, tuple):
+            shape = (shape, )
+        self._shape: tuple[SingleTypes | slice, ...] = shape
         
     @override
     def _validate(
@@ -42,15 +45,39 @@ class _Tensorshape(SubscriptableMetadata):
         if 'sympy_namespace' not in context:
             context['sympy_namespace'] = {}
         sympy_namespace = context['sympy_namespace']
-        # if context.get('shape_validated', False):
-        #     raise ValueError("shape can only be validated once")
-        # context['shape_validated'] = True
+        if 'tensor_shapes' not in context:
+            context['tensor_shapes'] = {}
+        elif field_name in context['tensor_shapes']:
+            raise ValueError(f"tensor shape for {field_name} has already been validated")
+        tensor_shapes = context['tensor_shapes']
         if not isinstance(value, TensorLike):
             if not strict:
                 return value
             raise TypeError(f"value must be a tensor-like object, got {type(value)}")
         req_shape = self._shape
         orig_shape = value.shape
+        tensor_shapes[field_name] = orig_shape
+        
+        # TODO: this algorithm is pretty good, but it should be move on NDArray dataschema.
+        req_shape_list: list[SingleTypes | slice | tuple[int, ...]] = []
+        j = 0
+        for dim in req_shape:
+            if isinstance(dim, str) and dim.startswith('*'):
+                name = dim[1:]
+                if name not in tensor_shapes:
+                    raise ValueError(f"tensor shape for {name} is not defined")
+                if not len(req_shape_list):
+                    req_shape_list = list(req_shape)
+                req_shape_list[j:j+1] = tensor_shapes[name]
+                j += len(tensor_shapes[name])
+            j += 1
+                
+        if len(req_shape_list):
+            req_shape = tuple(req_shape_list)
+        del req_shape_list
+            
+
+
         ellipsis_count = req_shape.count(...)  # count the number of ellipsis
         
         if ellipsis_count > 1:
@@ -167,6 +194,7 @@ class _Tensorshape(SubscriptableMetadata):
         info: core_schema.ValidationInfo,
         sympy_namespace: dict[str, int]
     ) -> None:
+        # TODO: use greater than and less than error message, which is alread provided by pydantic
         begin: SliceTypes = req_len.start
         end: SliceTypes = req_len.stop
         if isinstance(begin, Expr):
@@ -188,9 +216,9 @@ class _Tensorshape(SubscriptableMetadata):
                 raise ValueError(f"slice end {end} is not an integer")
             end = int(end)
         if begin is not None and orig_len < begin:
-            raise ValueError(f"dimension {dim} has length {orig_len}, but slice start {begin} is out of range")
+            raise DimensionGeError(dim, begin, orig_len)
         if end is not None and end < orig_len:
-            raise ValueError(f"dimension {dim} has length {orig_len}, but slice end {end} is out of range")
+            raise DimensionLtError(dim, end, orig_len)
 
 
 tensorshape = cast(

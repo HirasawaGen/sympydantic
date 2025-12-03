@@ -1,6 +1,5 @@
-from typing import get_args, cast, Any
+from typing import get_args, Any, NoReturn
 from functools import partial
-import warnings
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
@@ -14,6 +13,7 @@ except ImportError:
 if np.__version__ < '1.20':
     raise ImportError('Your numpy version is too old, please upgrade to 1.20 or later.')
 
+# TODO: add ["ArrayLike", "DTypeLike", "NBitBase", "NDArray"] to __all__
 import numpy.typing as npt
 # NOTE: _npt is temporally not used.
 import numpy._typing as _npt  # noqa: F401
@@ -23,7 +23,7 @@ __all__ = ['NDArray']
 
 
 class NDArray[T: np.generic](npt.NDArray[T]):  # type: ignore
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> NoReturn:
         raise NotImplementedError('This class is only used for type hinting, if you want to create an instance, use `np.array` or `np.ndarray` instead.')
     
     @classmethod

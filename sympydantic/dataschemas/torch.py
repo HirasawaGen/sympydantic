@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Any
+from typing import Any, NoReturn
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
@@ -15,7 +15,7 @@ __all__ = ['Tensor']
 
 
 class Tensor(torch.Tensor):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> NoReturn:
         raise NotImplementedError('This class is only use for type hinting. If you want to create an instance, please use `torch.tensor()` or `torch.Tensor()` instead.')
     
     @classmethod
