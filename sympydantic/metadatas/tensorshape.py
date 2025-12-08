@@ -216,7 +216,7 @@ class _Tensorshape(SubscriptableMetadata):
             if len(diff_symbols):
                 raise SymbolUndefinedError(diff_symbols, begin)
             begin_solved = begin.subs(sympy_namespace)
-            if not begin.is_integer:
+            if not begin_solved.is_integer:
                 raise ExpressionSolveError(begin, begin_solved)
             begin = int(begin_solved)
         if isinstance(end, Expr):
@@ -225,7 +225,7 @@ class _Tensorshape(SubscriptableMetadata):
             if len(diff_symbols):
                 raise SymbolUndefinedError(diff_symbols, end)
             end_solved = end.subs(sympy_namespace)
-            if not end.is_integer:
+            if not end_solved.is_integer:
                 raise ExpressionSolveError(end, end_solved)
             end = int(end_solved)
         if begin is not None and orig_len < begin:
