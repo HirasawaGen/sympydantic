@@ -11,12 +11,18 @@ except ImportError:
     raise ImportError('PyTorch is not installed. Please install it first.')
 
 
-__all__ = ['Tensor']
+__all__ = ['Tensor', 'FloatTensor', 'DoubleTensor', 'LongTensor']
 
 
 class Tensor(torch.Tensor):
-    def __init__(self, *args, **kwargs) -> NoReturn:
-        raise NotImplementedError('This class is only use for type hinting. If you want to create an instance, please use `torch.tensor()` or `torch.Tensor()` instead.')
+    _dtype: torch.dtype | None = None
+    
+    def __new__(cls, *args, **kwargs) -> NoReturn:
+        raise NotImplementedError(
+            'This class is only use for type hinting. '
+            'If you want to create an instance, '
+            'please use `torch.tensor()` or `torch.Tensor()` instead.'
+        )
     
     @classmethod
     def __get_pydantic_core_schema__(
@@ -40,7 +46,21 @@ class Tensor(torch.Tensor):
         if strict and not isinstance(value, torch.Tensor):
             raise TypeError(f'value is not a torch.Tensor (type: {type(value)})')
         if isinstance(value, torch.Tensor):
+            if cls._dtype is not None and value.dtype != cls._dtype:
+                value = value.to(cls._dtype)
             return value
-        return torch.tensor(value)
+        return torch.tensor(value).to(cls._dtype)
 
+
+class FloatTensor(Tensor):
+    _dtype = torch.float32
     
+
+class DoubleTensor(Tensor):
+    _dtype = torch.float64
+    
+
+class LongTensor(Tensor):
+    _dtype = torch.int64
+    
+

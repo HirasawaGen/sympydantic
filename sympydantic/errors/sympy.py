@@ -7,14 +7,14 @@ from pydantic_core import PydanticCustomError
 __all__ = [
     'SymbolRedefinedError',
     'SymbolUndefinedError',
-    'SymbolSolveError',
-    'ValueConflictError'
+    'ExpressionSolveError',
+    'ExpressionConflictError'
 ]
 
 
 @final
 class SymbolRedefinedError(PydanticCustomError):
-    _error_type: str = 'symbol_redefine'
+    _error_type: str = 'symbol_redefined'
     _message_template: str = "The symbol '{symbol}' is already set to {solved}. you provide a conflict value {value}."
     
     @override
@@ -61,8 +61,8 @@ class SymbolUndefinedError(PydanticCustomError):
 
 
 @final
-class SymbolSolveError(PydanticCustomError):
-    _error_type: str ='symbol_solve'
+class ExpressionSolveError(PydanticCustomError):
+    _error_type: str ='expr_solve'
     _message_template = "The expression '{expr}' is solved as {solved}, which is not a number."
     
     @override
@@ -76,11 +76,10 @@ class SymbolSolveError(PydanticCustomError):
                 'solved': solved
             }
         )
-        
 
 @final
-class ValueConflictError(PydanticCustomError):
-    _error_type: str = 'value_conflict'
+class ExpressionConflictError(PydanticCustomError):
+    _error_type: str = 'expr_conflict'
     _message_template = "The expression '{expr}' is solved as {solved}, which is conflict with the provided value {value}."
     
     @override

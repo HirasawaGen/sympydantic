@@ -44,7 +44,7 @@ def test_symbol_wrong(
 @mark.parametrize('a', [
     5
 ])
-@invalid_call
+@invalid_call('symbol_undefined')
 @validate_call
 def test_symbol_symbol_undefined(
     a: Annotated[int, x+y],

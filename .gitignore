@@ -17,3 +17,7 @@ wheels/
 
 # vscode settings
 .vscode/
+
+# iflow files
+.iflow/
+IFLOW.md

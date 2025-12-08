@@ -8,8 +8,8 @@ from pydantic_core import core_schema
 from ..errors.sympy import (
     SymbolRedefinedError,
     SymbolUndefinedError,
-    SymbolSolveError,
-    ValueConflictError,
+    ExpressionSolveError,
+    ExpressionConflictError,
 )
 
 
@@ -70,13 +70,13 @@ class _Expr(Expr):
             )
         solved = self.subs(sympy_namespace)
         if not solved.is_number:
-            raise SymbolSolveError(
+            raise ExpressionSolveError(
                 self,
                 solved
             )
         solved = float(solved)
         if abs(solved - value) > self._THRESHOLD:
-            raise ValueConflictError(
+            raise ExpressionConflictError(
                 self,
                 solved,
                 value

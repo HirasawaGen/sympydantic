@@ -19,13 +19,13 @@ from pydantic import validate_call
 from .metadatas import TensorLike, tensorshape, nrange
 
 try:
-    from .dataschemas.numpy import NDArray
+    from .dataschemas.numpy import *
     __all__.append('NDArray')
 except ImportError:
     pass
 
 try:
-    from .dataschemas.torch import Tensor
+    from .dataschemas.torch import *
     __all__.append('Tensor')
 except ImportError:
     pass

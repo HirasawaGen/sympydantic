@@ -1,6 +1,10 @@
+'''
+doc string
+'''
 from __future__ import annotations
 
-from typing import Any, cast, Literal, override, TypeVar, Callable
+from typing import Any, TypeVar, Final
+from typing import cast, override
 from types import EllipsisType
 from functools import singledispatchmethod, reduce
 
@@ -10,21 +14,23 @@ import sympy as sp
 
 from .basemetadata import SubscriptableMetadata, _SupportsGetitem
 from .protocols import TensorLike
-from ..errors.compare import DimensionGeError, DimensionLtError
+from ..errors.compare import *
+from ..errors.tensorlike import *
+from ..errors.sympy import *
+
+
+__all__ = ['tensorshape']
 
 
 type SingleTypes = int | str | TypeVar | Expr | EllipsisType
 type SliceTypes = int | Expr | None
 
+_STRICT_MODE: Final[int] = 1
+_LAX_MODE: Final[int] = -1
+_DEFAULT_MODE: Final[int] = 0
+
 
 class _Tensorshape(SubscriptableMetadata):
-    # TODO: allow_reshape and allow_broadcast and allow_squeeze
-    # PS: I try to implement it, but `validate_call` is not support custom config keys.
-    # may be I can use `strict=True/False/None` to represent these options.
-    # strict=True: not allow all, and not all list cast to tensorlike.
-    # strict=None: allow unsqueeze and squeeze, broadcast
-    # strict=False: allow reshape
-    # TODO: change all the ErrorType to PydanticUserError & TypeError
     def __init__(self, shape: tuple[SingleTypes | slice, ...] | SingleTypes | slice):
         if not isinstance(shape, tuple):
             shape = (shape, )
@@ -40,7 +46,16 @@ class _Tensorshape(SubscriptableMetadata):
         if field_name is None:
             return value
         config = {} if info.config is None else info.config
-        strict = config.get('strict', False)
+        strict = config.get('strict') == True
+        # TODO: use mode, not strict
+        # strict mode: not allow all, and not all list cast to tensorlike.
+        # default mode: allow unsqueeze and squeeze, broadcast
+        # lax mode: allow reshape
+        mode: int
+        match config.get('strict'):
+            case True:  mode = _STRICT_MODE
+            case False: mode = _LAX_MODE
+            case _:     mode = _DEFAULT_MODE
         context = {} if info.context is None else info.context
         if 'sympy_namespace' not in context:
             context['sympy_namespace'] = {}
@@ -48,7 +63,7 @@ class _Tensorshape(SubscriptableMetadata):
         if 'tensor_shapes' not in context:
             context['tensor_shapes'] = {}
         elif field_name in context['tensor_shapes']:
-            raise ValueError(f"tensor shape for {field_name} has already been validated")
+            raise ShapeValidatedError(field_name)
         tensor_shapes = context['tensor_shapes']
         if not isinstance(value, TensorLike):
             if not strict:
@@ -62,10 +77,10 @@ class _Tensorshape(SubscriptableMetadata):
         req_shape_list: list[SingleTypes | slice | tuple[int, ...]] = []
         j = 0
         for dim in req_shape:
-            if isinstance(dim, str) and dim.startswith('*'):
+            if isinstance(dim, str) and dim != '*' and dim.startswith('*'):
                 name = dim[1:]
                 if name not in tensor_shapes:
-                    raise ValueError(f"tensor shape for {name} is not defined")
+                    raise ShapeUnvalidatedError(name)
                 if not len(req_shape_list):
                     req_shape_list = list(req_shape)
                 req_shape_list[j:j+1] = tensor_shapes[name]
@@ -76,12 +91,10 @@ class _Tensorshape(SubscriptableMetadata):
             req_shape = tuple(req_shape_list)
         del req_shape_list
             
-
-
         ellipsis_count = req_shape.count(...)  # count the number of ellipsis
         
         if ellipsis_count > 1:
-            raise ValueError(f"only one ellipsis is allowed in shape, got {ellipsis_count}")
+            raise ShapeFormatError('multiple `...`(ellipsis) was passed.')
         elif ellipsis_count == 1:
             # tensorshape[X, ..., 2*X]
             # This means the ndim of this tensor should be at least 2
@@ -89,8 +102,8 @@ class _Tensorshape(SubscriptableMetadata):
             # tensorshape[..., 3]
             # This means the last dimension should be 3
             # etc.
-            if len(req_shape) >= len(orig_shape):
-                raise ValueError(f"shape {orig_shape} is not compatible with required shape {req_shape}")
+            if len(req_shape) - 1 > len(orig_shape):
+                raise VarDimentionConflictError(req_shape, orig_shape)
             ellipsis_idx = req_shape.index(...)
             # replace the ellipsis with the `*`
             # because `*` means any length
@@ -104,7 +117,7 @@ class _Tensorshape(SubscriptableMetadata):
             # if there isn't ellipsis in the shape,
             # the length of the shape should be the same as the tensor's ndim
             if len(req_shape) != len(orig_shape):
-                raise ValueError(f"shape {orig_shape} is not compatible with required shape {req_shape}")
+                raise DimensionConflictError(req_shape, orig_shape)
         # ellipsis has been handled, so cast the type.
         req_shape = cast(tuple[int | str | Expr | slice, ...], req_shape)
         # get the sympy namespace from the context, this context is get from ValidationInfo
@@ -120,7 +133,7 @@ class _Tensorshape(SubscriptableMetadata):
                 # if req_len == orig_len, it will be dealed on the obove if statement
                 # So we can make sure req_len != orig_len here
                 # and if req_len != orig_len, and req_len is an integer, it means it is a fixed length
-                raise ValueError(f"dimension {dim} has length {orig_len}, expected {req_len}")
+                raise ShapeConflictError(dim, f'{req_len} (int)', orig_len)
             if isinstance(req_len, str):
                 # string objects who is not `*`, will treated as sympy.Expr object
                 req_len = sp.sympify(req_len)
@@ -143,9 +156,9 @@ class _Tensorshape(SubscriptableMetadata):
                     # so it will into this branch.
                     # like the above example, tensorshape[X, X], provide shape is (3, 4)
                     # X is already seen and set to 3, so it will check if the length is 3
-                    # and we found it is 4, it will go into the under branch and raise ValueError
+                    # and we found it is 4, it will go into the under branch and raise error
                     if sympy_namespace[req_len.name] != orig_len:
-                        raise ValueError(f"Symbol {req_len} is already defined as {sympy_namespace[req_len.name]}, you provide incompatible value: {orig_len}")
+                        raise SymbolRedefinedError(req_len, sympy_namespace[req_len.name], orig_len)
                 continue
             # req_len is an sp.Expr object, but not sp.Symbol, because Symbol object is dealed in the previous branch
             # function calling is super slow, so I have to use awful if-else.
@@ -163,7 +176,7 @@ class _Tensorshape(SubscriptableMetadata):
         info: core_schema.ValidationInfo,
         sympy_namespace: dict[str, int]
     ) -> None:
-        raise NotImplementedError(f"unsupported type {type(req_len)} for dimension {dim}")
+        raise ShapeFormatError(f"unsupported type {type(req_len)} for dimension {dim}")
     
     @_dim_validate.register
     def _(
@@ -179,11 +192,12 @@ class _Tensorshape(SubscriptableMetadata):
         free_symbols = {symbol.name for symbol in req_len.free_symbols}
         diff_symbols = free_symbols - sympy_namespace.keys()
         if len(diff_symbols):
-            raise ValueError(f"Expression {req_len} has undifined symbols: {diff_symbols}.")
+            raise SymbolUndefinedError(diff_symbols, req_len)
         solved_value = req_len.subs(sympy_namespace)
-        if solved_value.is_integer and int(solved_value) == orig_len:
-            return
-        raise ValueError(f"Expression {req_len} is solved to {solved_value}, you provide incompatible value: {orig_len}")
+        if not solved_value.is_integer:
+            raise ExpressionSolveError(req_len, solved_value)
+        if not int(solved_value) == orig_len:
+            raise ExpressionConflictError(req_len, solved_value, orig_len)
     
     @_dim_validate.register
     def _(
@@ -194,35 +208,36 @@ class _Tensorshape(SubscriptableMetadata):
         info: core_schema.ValidationInfo,
         sympy_namespace: dict[str, int]
     ) -> None:
-        # TODO: use greater than and less than error message, which is alread provided by pydantic
         begin: SliceTypes = req_len.start
         end: SliceTypes = req_len.stop
         if isinstance(begin, Expr):
             free_symbols = {symbol.name for symbol in begin.free_symbols}
             diff_symbols = free_symbols - sympy_namespace.keys()
             if len(diff_symbols):
-                raise ValueError(f"slice start {begin} has free symbols {diff_symbols}, but they are not defined in the shape")
-            begin = begin.subs(sympy_namespace)
+                raise SymbolUndefinedError(diff_symbols, begin)
+            begin_solved = begin.subs(sympy_namespace)
             if not begin.is_integer:
-                raise ValueError(f"slice start {begin} is not an integer")
-            begin = int(begin)
+                raise ExpressionSolveError(begin, begin_solved)
+            begin = int(begin_solved)
         if isinstance(end, Expr):
             free_symbols = {symbol.name for symbol in end.free_symbols}
             diff_symbols = free_symbols - sympy_namespace.keys()
             if len(diff_symbols):
-                raise ValueError(f"slice end {end} has free symbols {diff_symbols}, but they are not defined in the shape")
-            end = end.subs(sympy_namespace)
+                raise SymbolUndefinedError(diff_symbols, end)
+            end_solved = end.subs(sympy_namespace)
             if not end.is_integer:
-                raise ValueError(f"slice end {end} is not an integer")
-            end = int(end)
+                raise ExpressionSolveError(end, end_solved)
+            end = int(end_solved)
         if begin is not None and orig_len < begin:
             raise DimensionGeError(dim, begin, orig_len)
         if end is not None and end < orig_len:
             raise DimensionLtError(dim, end, orig_len)
 
 
-tensorshape = cast(
+tensorshape: Final[_Tensorshape] = cast(
     _SupportsGetitem[tuple[SingleTypes | slice, ...], _Tensorshape],
     _Tensorshape.subscriptable()
 )
-
+'''
+# TODO: write doc string for tensorshape
+'''
