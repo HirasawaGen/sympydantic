@@ -1,3 +1,12 @@
+'''
+sympydantic
+=====
+
+Provides
+  1. blablablah
+  2. blublubluh
+  3. etc.
+'''
 __author__ = 'HirasawaGen'
 __repo__ = 'https://github.com/HirasawaGen/sympydantic'
 __version__ = '0.1.0'

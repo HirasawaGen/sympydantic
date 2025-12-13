@@ -1,9 +1,6 @@
 from typing import override, Any
 
-from pydantic_core import PydanticCustomError
-
 from . import _BaseCustomError
-
 
 
 __all__ = [
