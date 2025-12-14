@@ -15,14 +15,15 @@ __all__ = [
 class _BaseDimensionCompareError(PydanticCustomError, ABC):
     _error_type: str
     _template: str
-    
+
     @override
     def __new__(cls, dimension: int, value: Any, provide: Any):
         return super().__new__(
             cls,
             cls._error_type,
-            "The {dimension}-th dimension of this tensor-like object should be "\
-            + cls._template\
+            "The {dimension}-th dimension of"
+            + "this tensor-like object should be "
+            + cls._template
             + " {value}. You provide {provide}.",
             {
                 'dimension': dimension,
@@ -30,15 +31,15 @@ class _BaseDimensionCompareError(PydanticCustomError, ABC):
                 'provide': provide
             }
         )
-    
-    
+
+
 @final
 class DimensionGeError(_BaseDimensionCompareError):
     _error_type: str = 'greater_than_equal'
     _template: str = 'greater than or equal to'
 
 
-@final        
+@final
 class DimensionGtError(_BaseDimensionCompareError):
     _error_type: str = 'greater_than'
     _template: str = 'greater than'
@@ -54,4 +55,3 @@ class DimensionLeError(_BaseDimensionCompareError):
 class DimensionLtError(_BaseDimensionCompareError):
     _error_type: str = 'less_than'
     _template: str = 'less than'
-    

@@ -5,10 +5,10 @@ from pydantic_core import PydanticCustomError
 
 
 class _BaseCustomError(ABC, PydanticCustomError):
-    # TODO: change all error to the subclass of this class 
+    # TODO: change all error to the subclass of this class
     _error_type: str
     _message_template: str
-    
+
     @override
     def __new__(cls, /, content: dict):
         return super().__new__(

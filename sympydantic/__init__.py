@@ -1,3 +1,4 @@
+# flake8: noqa: F401, F403
 '''
 sympydantic
 =====
@@ -38,5 +39,3 @@ try:
     __all__.append('Tensor')
 except ImportError:
     pass
-
-

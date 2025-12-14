@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Protocol, Sized, Iterable, Sequence, Any
 from typing import runtime_checkable
-from abc import ABC, abstractmethod
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
@@ -29,9 +28,6 @@ class _SupportsCompute(Protocol):
     def __truediv__(self, other: Any) -> _SupportsCompute: pass
 
 
-# 我希望NDArray不需要显式继承这个类, 那Protocol就是最优解, 
-# 但我又希望这个类实现__get_pydantic_core_schema__协议
-# 可以使用猴子补丁补上去
 @runtime_checkable
 class TensorLike(Protocol, Sized, Iterable):
     '''
@@ -39,48 +35,46 @@ class TensorLike(Protocol, Sized, Iterable):
     '''
     @property
     def dtype(self) -> Any: pass
-    
+
     @property
     def shape(self) -> tuple[int, ...]: pass
-    
+
     @property
     def ndim(self) -> int: pass
-    
+
     def min(
         self,
     ) -> _SupportsCompute: pass
-    
+
     def max(
         self,
     ) -> _SupportsCompute: pass
-    
+
     def reshape(
         self,
         shape: Sequence[int],
     ) -> TensorLike: pass
-    
+
     def __getitem__(
         self,
         *key: Any
     ) -> _SupportsCompute: pass
-    
+
     def __add__(
         self,
         other: _SupportsCompute,
     ) -> _SupportsCompute: pass
-    
+
     def __sub__(
         self,
         other: _SupportsCompute,
     ) -> _SupportsCompute: pass
-    
+
     def __matmul__(
         self,
         other: _SupportsCompute,
     ) -> _SupportsCompute: pass
-    
-    
-    
+
 
 @classmethod  # type: ignore[misc]
 def __get_pydantic_core_schema__(
@@ -95,6 +89,7 @@ def __get_pydantic_core_schema__(
     return core_schema.no_info_plain_validator_function(
         _validate,
     )
-    
 
-TensorLike.__get_pydantic_core_schema__ = __get_pydantic_core_schema__  # type: ignore[attr-defined]
+
+TensorLike.__get_pydantic_core_schema__ =\
+    __get_pydantic_core_schema__  # type: ignore[attr-defined]

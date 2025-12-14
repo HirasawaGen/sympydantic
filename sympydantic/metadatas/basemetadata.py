@@ -6,6 +6,7 @@ from annotated_types import BaseMetadata
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
 
+
 class MyBaseMetadata(BaseMetadata, ABC):
     def __get_pydantic_core_schema__(
         self,
@@ -16,7 +17,7 @@ class MyBaseMetadata(BaseMetadata, ABC):
             self._validate,
             handlers(source_type),
         )
-    
+
     @abstractmethod
     def _validate(
         self,
@@ -26,7 +27,7 @@ class MyBaseMetadata(BaseMetadata, ABC):
 
 
 class _SupportsGetitem[K, V](Protocol):
-    def __getitem__(self, key: K) -> V:...
+    def __getitem__(self, key: K) -> V: ...
 
 
 class SubscriptableMetadata(MyBaseMetadata):
@@ -35,7 +36,8 @@ class SubscriptableMetadata(MyBaseMetadata):
     def subscriptable(cls) -> _SupportsGetitem[Any, Self]:
         class Subscriptable:
             def __getitem__(self, *keys: Any):
-                return cls(*keys)  
+                return cls(*keys)
+
         Subscriptable.__name__ = f'{cls.__name__}Subscriptable'
         Subscriptable.__qualname__ = f'{cls.__qualname__}Subscriptable'
         Subscriptable.__module__ = cls.__module__

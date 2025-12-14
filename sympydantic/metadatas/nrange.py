@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import override, cast, Any, TypeVar
+from typing import override, cast, Any, Final
 
 from pydantic_core import core_schema
-import sympy as sp  # type: ignore[import-untyped]
 from sympy import Expr  # type: ignore[import-untyped]
 
 from .basemetadata import SubscriptableMetadata, _SupportsGetitem
@@ -19,28 +18,24 @@ class _NRange(SubscriptableMetadata):
         self._start = cast(RangeType, range_.start)
         self._stop = cast(RangeType, range_.stop)
         self._step = cast(RangeType, range_.step)
-    
+
     @override
     def _validate(
         self,
         value: _SupportsCompareNumber | Any,
         info: core_schema.ValidationInfo,
     ) -> _SupportsCompareNumber:
-        # isinstance() argument 2 cannot be a parameterized generic
-        # so I can't use isinstance(value, _SupportsCompareNumber.__value__)
-        # because `type _SupportsCompareNumber = _SupportsCompare[float] | _SupportsCompare[int]`
-        # If you define a class that only support compare to str.
-        # mypy will raise an error.
-        # but the under if-branch will not.
         if not isinstance(value, _SupportsCompare):
-            raise TypeError(f'value must be a number, not {type(value).__name__}')
+            raise TypeError(
+                f'value must be a number, not {type(value).__name__}'
+            )
         value = cast(_SupportsCompareNumber, value)
         config = {} if info.config is None else info.config
-        strict = config.get('strict', False)
+        strict = config.get('strict', False)  # noqa: F841
         context = info.context
         if context is None:
             return value
-        if not 'sympy_namespace' in context:
+        if 'sympy_namespace' not in context:
             context['sympy_namespace'] = {}
         sympy_namespace = context['sympy_namespace']
         start: None | float
@@ -68,7 +63,7 @@ class _NRange(SubscriptableMetadata):
         else:
             stop = None if self._stop is None else float(self._stop)
         # TODO: support step
-        
+
         if start is not None and value < start:  # type: ignore[operator]
             raise ValueError(f'value must be greater than {start}')
         if stop is not None and value >= stop:  # type: ignore[operator]
@@ -76,7 +71,51 @@ class _NRange(SubscriptableMetadata):
         return value
 
 
-nrange = cast(
+nrange: Final[_NRange] = cast(
     _SupportsGetitem[slice, _NRange],
     _NRange.subscriptable()
 )
+'''
+nrange is NOT a pydantic metadata.
+
+but the subscript value of nrange is a metadata object.
+
+you can use `nrange[3:9]` or `nrange[X:19]`
+to validate did a number in the interval.
+
+Example:
+>>> from typing import Annotated
+>>> from sympy.abc import X
+>>> from pydantic import validate_call
+>>> from sympydantic import nrange
+
+>>> @validate_call
+>>> def foo(num: Annotated[int, nrange[3:9]]):
+...     print(num)
+
+
+>>> foo(5)
+5
+>>> foo(10)
+Traceback (most recent call last):
+    ...traceback...
+pydantic_core._pydantic_core.ValidationError: 1 validation error for f00
+0
+  Value error, value must be less than or equal to 9.0
+
+>>> # you can also use sympy expression in nrange
+>>> @validate_call
+>>> def foo(x: Annotated[int, X], num: Annotated[int, nrange[3:X]]):
+...     # pydantic will make sure num is in the interval of [3, x)
+...     print(num)
+
+>>> foo(10, 5)
+5
+>>> foo(10, 15)
+Traceback (most recent call last):
+    ...traceback...
+pydantic_core._pydantic_core.ValidationError: 1 validation error for f00
+0
+  Value error, value must be less than or equal to 10.0
+
+'''

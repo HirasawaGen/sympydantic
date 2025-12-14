@@ -1,10 +1,8 @@
 import warnings
-from typing import Any
+from typing import Any, Final
 
 from pydantic_core import core_schema
 
-# 我希望最终发行版并不刚需pytorch作为依赖，所以这里这样写了
-# 整个工程不需要torch作为刚需的依赖，但是这个子模块需要
 try:
     import torch
 except ImportError:
@@ -19,7 +17,7 @@ __all__ = ['Device', 'CPU', 'CUDA', 'CUDA_']
 class Device(MyBaseMetadata):
     def __init__(self, device: str | torch.device):
         self._device = torch.device(device)
-    
+
     def _validate(
         self,
         value: Any,
@@ -38,12 +36,35 @@ class Device(MyBaseMetadata):
         return value
 
 
-    
-CPU = Device(device='cpu')
+CPU: Final[Device] = Device(device='cpu')
+'''
+This metadata will cast your tensor to CPU device.
+
+you can use it like: `Annotated[sympydantic.Tensor, sympydantic.CPU]`
+'''
+
+CUDA_: Final[tuple[Device]]
+'''
+This is a tuple of metadatas, each of which will cast your tensor
+to a specific CUDA device.
+
+size of this tuple is equal to the number of CUDA devices.
+
+you can use it like: `Annotated[sympydantic.Tensor, sympydantic.CUDA_[2]]`
+'''
+
+CUDA: Final[Device | None]
+'''
+This metadata will cast your tensor to your first CUDA device.
+
+you can use it like: `Annotated[sympydantic.Tensor, sympydantic.CUDA]`
+
+If your cuda is not available, it will be None.
+'''
 
 if torch.cuda.is_available():
     _DEVICE_COUNT = torch.cuda.device_count()
-            
+
     CUDA_ = tuple(
         Device(device=f'cuda:{i}')
         for i in range(_DEVICE_COUNT)
@@ -51,4 +72,3 @@ if torch.cuda.is_available():
     CUDA = CUDA_[0] if len(CUDA_) else None
 else:
     CUDA_ = tuple()
-    

@@ -239,6 +239,20 @@ tensor(9, device='cuda:0')
 
 強化学習環境が `tuple` を返しても `ndarray` を返しても、もう心配不要！
 
+## インストール方法
+
+`pip` を使ってなら:
+
+```cmd
+pip install https://github.com/HirasawaGen/sympydantic.git
+```
+
+或いは`uv`:
+
+```cmd
+uv add https://github.com/HirasawaGen/sympydantic.git
+```
+
 ## TODOs
 
 - 自動`squeeze`対応：たとえば `(1,3,4,5)` を期待しているのに `(3,1,4,5,1)` が来たら自動でリサイズ  

@@ -274,6 +274,20 @@ tensor(9, device='cuda:0')
 
 这样你就不用担心某个**强化学习**环境到底给你`tuple`还是`ndarray`了！
 
+## 如何使用
+
+如果你使用`pip`:
+
+```cmd
+pip install https://github.com/HirasawaGen/sympydantic.git
+```
+
+或者你使用`uv`:
+
+```cmd
+uv add https://github.com/HirasawaGen/sympydantic.git
+```
+
 ## TODOs
 
 - 也许可以考虑把**squeeze**做进去，例如标注的形状是`(1, 3, 4, 5)`，传入的形状是`(3, 1, 4, 5, 1)`，就自动`resize`成需要的形状。

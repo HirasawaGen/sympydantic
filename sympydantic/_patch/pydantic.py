@@ -1,3 +1,4 @@
+# flake8: noqa: E501
 from pydantic._internal._validate_call import ValidateCallWrapper
 import pydantic_core
 from typing import Any
@@ -16,6 +17,7 @@ def __call__(self, *args: Any, **kwargs: Any) -> Any:
         return self.__return_pydantic_validator__(res)
     else:
         return res
+
 
 def __new_call__(self, *args: Any, **kwargs: Any) -> Any:
     if not self.__pydantic_complete__:

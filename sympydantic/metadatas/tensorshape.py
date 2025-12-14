@@ -1,9 +1,10 @@
+# flake8: noqa: F403, F405
 from __future__ import annotations
 
 from typing import Any, TypeVar, Final
 from typing import cast, override
 from types import EllipsisType
-from functools import singledispatchmethod, reduce
+from functools import singledispatchmethod
 
 from pydantic_core import core_schema
 from sympy import Expr, Symbol  # type: ignore[import-untyped]
@@ -236,5 +237,76 @@ tensorshape: Final[_Tensorshape] = cast(
     _Tensorshape.subscriptable()
 )
 '''
-# TODO: write doc string for tensorshape
+tensorshape is NOT a pydantic metadata
+
+but the subscript value of tensorshape is a metadata object.
+
+you can use `tensorshape[X, X:Y]` or `tensorshape[3, 4:9, 10:X]` to validate the shape of tensor-like object.
+
+Example:
+
+>>> from typing import Annotated
+>>> import numpy as np
+>>> from sympy.abc import X, Y, Z
+>>> from pydantic import validate_call
+>>> from sympydantic import tensorshape, TensorLike
+
+>>> @validate_call  # you can use sympy in the tensorshape
+>>> def foo(a: Annotated[TensorLike, tensorshape[X, X+3]]):
+...     print(a.shape)
+
+>>> foo(np.zeros((3, 6)))  # right shape which same with `(X, X+3)`
+(3, 6)
+>>> foo(np.zeros((3, 7)))  # wrong shape which is `(X, X+4)`
+Traceback (most recent call last):
+    ...
+pydantic_core._pydantic_core.ValidationError: 1 validation error for foo
+0
+  The expression 'X + 3' is solved as 6, which is conflict with the provided value 7.
+  ...
+
+>>> # `Annotated[TensorLike, tensorshape[X, X+3]]` is too long, you can use typealias:
+>>> type SquareMatrix = Annotated[TensorLike, tensorshape[X, X]]
+>>> type RowVector = Annotated[TensorLike, tensorshape['*', 1]]
+>>> type ColVector = Annotated[TensorLike, tensorshape[1, '*']]
+>>> type UnsqeezeSelf = Annotated[TensorLike, tensorshape['*self', 1]]
+
+>>> # If you need shape validate is only an interval, you can use slice object.
+>>> @validate_call
+>>> def foo(a: Annotated[TensorLike, tensorshape[3, X, 9:X*2]]):
+...     print(a.shape)
+...     # pydantic will guard shape of a as `(3, X, 9:X*2+3)`
+...     # equivalent to the under assertion
+...     assert a.ndim == 3
+...     assert a.shape[0] == 3
+...     num_X = a.shape[1]
+...     assert 9 <= num_X < 2*num_X + 3
+
+>>> # If you don't want to validate ndim or a specific dimension, you can use `...` or `*`.
+>>> @validate_call
+>>> def foo(
+        a: Annotated[TensorLike, tensorshape['*', '*', '*', '*', '*']],
+        b: Annotated[TensorLike, tensorshape[3, ..., 6]],
+... ):
+...     print(a.shape)
+...     print(b.shape)
+...     # equivalent to the under assertion
+...     assert a.ndim == 5
+...     assert b.ndim >= 2  # not validate specific ndim.
+...     assert b.shape[0] == 3
+...     assert b.shape[-1] == 6
+
+>>> # If you need shape of these arguments have relation with each other, use str as '*xxx' format.
+>>> @validate_call
+>>> def foo(
+        a: Annotated[TensorLike, tensorshape[...]],
+        b: Annotated[TensorLike, tensorshape[3, '*a', 4]],
+... ):
+...     print(a.shape)
+...     print(b.shape)
+...     # equivalent to the under assertion
+...     assert b.ndim - a.ndim == 2
+...     assert b.shape[1:-1] == a.shape
+...     assert b.shape[0] == 3
+...     assert b.shape[-1] == 4
 '''

@@ -2,7 +2,6 @@ from typing import NoReturn, Any
 
 from sympy import Expr, Symbol  # type: ignore[import-untyped]
 from pydantic import GetCoreSchemaHandler
-from pydantic_core import PydanticCustomError
 from pydantic_core import core_schema
 
 from ..errors.sympy import (
@@ -15,7 +14,7 @@ from ..errors.sympy import (
 
 class _Expr(Expr):
     _THRESHOLD = 1e-10
-    
+
     def __get_pydantic_core_schema__(
         self,
         source_type: type,
@@ -29,7 +28,7 @@ class _Expr(Expr):
             self._validate,
             handlers(source_type),
         )
-    
+
     def _validate(
         self,
         value: Any,
@@ -44,7 +43,7 @@ class _Expr(Expr):
         context = info.context
         if context is None:
             return value
-        if not 'sympy_namespace' in context.keys():
+        if 'sympy_namespace' not in context.keys():
             context['sympy_namespace'] = {}
         sympy_namespace = context['sympy_namespace']
         if isinstance(self, Symbol):
@@ -82,12 +81,14 @@ class _Expr(Expr):
                 value
             )
         return value
-        
+
     def __index__(self) -> NoReturn:
         '''
         This method is patched.
         '''
-        raise NotImplementedError("`__index__` is a monkey patch, it is not implemented.")
+        raise NotImplementedError(
+            "`__index__` is a monkey patch, it is not implemented."
+        )
 
 
 Expr._THRESHOLD = _Expr._THRESHOLD

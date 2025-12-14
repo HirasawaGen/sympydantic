@@ -1,10 +1,8 @@
 import warnings
-from typing import Any
+from typing import Any, Final
 
 from pydantic_core import core_schema
 
-# 我希望最终发行版并不刚需pytorch作为依赖，所以这里这样写了
-# 整个工程不需要torch作为刚需的依赖，但是这个子模块需要
 try:
     import torch
 except ImportError:
@@ -19,7 +17,7 @@ __all__ = ['RequireGrad', 'WITH_GRAD', 'NO_GRAD']
 class RequireGrad(MyBaseMetadata):
     def __init__(self, require_grad: bool = True):
         self._require_grad = require_grad
-    
+
     def _validate(
         self,
         value: Any,
@@ -35,7 +33,9 @@ class RequireGrad(MyBaseMetadata):
         if isinstance(value, torch.Tensor):
             if value.dtype not in {torch.float32, torch.float64}:
                 if strict:
-                    raise TypeError(f'Expected float tensor, but got {value.dtype}')
+                    raise TypeError(
+                        f'Expected float tensor, but got {value.dtype}'
+                    )
                 value = value.float()
             return value.requires_grad_(self._require_grad)
         if strict:
@@ -45,7 +45,14 @@ class RequireGrad(MyBaseMetadata):
 
     def __invert__(self):
         return RequireGrad(not self._require_grad)
-    
-    
-WITH_GRAD = RequireGrad()
-NO_GRAD = ~WITH_GRAD
+
+
+WITH_GRAD: Final[RequireGrad] = RequireGrad(True)
+'''
+This metadata will cast your tensor to float and set `requires_grad` to `True`
+'''
+
+NO_GRAD: Final[RequireGrad] = ~WITH_GRAD
+'''
+This metadata will cast your tensor to float and set `requires_grad` to `False`
+'''

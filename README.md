@@ -243,6 +243,20 @@ tensor(9, device='cuda:0')
 ```
 No more worries about whether that RL environment returns a `tuple` or an `ndarray`!
 
+## How To Use?
+
+if you use `pip`:
+
+```cmd
+pip install https://github.com/HirasawaGen/sympydantic.git
+```
+
+or `uv`:
+
+```cmd
+uv add https://github.com/HirasawaGen/sympydantic.git
+```
+
 ## TODOs
 
 - Auto-squeeze: e.g. expected shape `(1, 3, 4, 5)` accepts `(3, 1, 4, 5, 1)` and reshapes it automatically.  

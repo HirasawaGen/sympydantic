@@ -18,6 +18,7 @@ include = ["sympydantic*"]
 
 [dependency-groups]
 dev = [
+    "flake8>=7.3.0",
     "mypy>=1.18.2",
     "numpy>=2.3.5",
     "pytest>=9.0.1",
