@@ -1,16 +1,27 @@
 [project]
 name = "sympydantic"
 version = "0.1.0"
-description = "Add your description here"
+description = "Sympydantic combines Pydantic and SymPy to pre-validate or pre-cast shapes of numpy/torch tensors."
 readme = "README.md"
 requires-python = ">=3.12"
+keywords = ["python", "numpy", "torch", "sympy", "pydantic", "sympydantic"]
+authors = [
+    { name = 'HirasawaGen', email = '1294702887@qq.com' }
+]
+maintainers = [
+    { name = 'HirasawaGen', email = '1294702887@qq.com' }
+]
+license = { text = "MIT" }
 dependencies = [
     "sympy>=1.14.0",
     "pydantic>=2.12.4",
 ]
 
+[project.urls]
+Repository = "https://github.com/HirasawaGen/sympydantic"
+
 [build-system]
-requires = ["setuptools>=61", "wheel"]
+requires = ["setuptools>=80", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]

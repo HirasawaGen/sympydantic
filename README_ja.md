@@ -4,6 +4,11 @@
   <a href="./README_ja.md">🇯🇵 日本語</a>
 </p>
 
+![Pydantic](https://img.shields.io/badge/Pydantic-%E2%89%A5%202.12.4-0e7fc0?logo=pydantic&logoColor=white)
+![SymPy](https://img.shields.io/badge/SymPy-%E2%89%A5%201.14.0-3f7aa0?logo=sympy&logoColor=white)
+![NumPy-optional](https://img.shields.io/badge/NumPy-optional-9c7c4f?logo=numpy)
+![PyTorch-optional](https://img.shields.io/badge/PyTorch-optional-ee4c2c?logo=PyTorch&logoColor=white)
+
 # Sympydantic プロジェクトガイド
 
 ## プロジェクトの背景
@@ -258,3 +263,5 @@ uv add https://github.com/HirasawaGen/sympydantic.git
 - 自動`squeeze`対応：たとえば `(1,3,4,5)` を期待しているのに `(3,1,4,5,1)` が来たら自動でリサイズ  
 - ブロードキャスト対応：たとえば `(3,4,4)` を期待しているのにスカラが来たら自動でブロードキャスト  
 - Python 3.8〜3.11 への対応
+- 行列が対称か、正定値か、ランクが最大かなどを検証できるメタデータをサポートする。  
+- 動的検証はパフォーマンスを消耗するため、mypy プラグインを自作してこの問題を最適化することを検討してもよい。

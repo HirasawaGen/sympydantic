@@ -4,6 +4,11 @@
   <a href="./README_ja.md">🇯🇵 日本語</a>
 </p>
 
+![Pydantic](https://img.shields.io/badge/Pydantic-%E2%89%A5%202.12.4-0e7fc0?logo=pydantic&logoColor=white)
+![SymPy](https://img.shields.io/badge/SymPy-%E2%89%A5%201.14.0-3f7aa0?logo=sympy&logoColor=white)
+![NumPy-optional](https://img.shields.io/badge/NumPy-optional-9c7c4f?logo=numpy)
+![PyTorch-optional](https://img.shields.io/badge/PyTorch-optional-ee4c2c?logo=PyTorch&logoColor=white)
+
 # Sympydantic项目指南
 
 ## 项目背景
@@ -293,3 +298,5 @@ uv add https://github.com/HirasawaGen/sympydantic.git
 - 也许可以考虑把**squeeze**做进去，例如标注的形状是`(1, 3, 4, 5)`，传入的形状是`(3, 1, 4, 5, 1)`，就自动`resize`成需要的形状。
 - 对广播的支持，例如标注为`(3, 4, 4)`，传入了标量，则把该标量广播到`(3, 4, 4)`
 - 对python3.8到3.11这几个版本的支持。
+- 支持一些可以验证矩阵是否对称，是否正定，是否满秩等的元数据。
+- 动态验证浪费性能，也许我可以考虑编写一个mypy插件来优化这个问题。

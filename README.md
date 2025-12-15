@@ -4,6 +4,11 @@
   <a href="./README_ja.md">🇯🇵 日本語</a>
 </p>
 
+![Pydantic](https://img.shields.io/badge/Pydantic-%E2%89%A5%202.12.4-0e7fc0?logo=pydantic&logoColor=white)
+![SymPy](https://img.shields.io/badge/SymPy-%E2%89%A5%201.14.0-3f7aa0?logo=sympy&logoColor=white)
+![NumPy-optional](https://img.shields.io/badge/NumPy-optional-9c7c4f?logo=numpy)
+![PyTorch-optional](https://img.shields.io/badge/PyTorch-optional-ee4c2c?logo=PyTorch&logoColor=white)
+
 # Sympydantic Project Guide
 
 ## Project Background
@@ -262,3 +267,5 @@ uv add https://github.com/HirasawaGen/sympydantic.git
 - Auto-squeeze: e.g. expected shape `(1, 3, 4, 5)` accepts `(3, 1, 4, 5, 1)` and reshapes it automatically.  
 - Broadcasting support: e.g. annotate `(3, 4, 4)` and pass a scalar, then broadcast it to `(3, 4, 4)`.  
 - Support Python 3.8–3.11.  
+- Support metadatas which validate whether a matrix is symmetric, positive-definite, and rank-deficient, etc. 
+- dynamic validation is wasting performance. Maybe I should to code a mypy plugins to optimize it.
